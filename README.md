@@ -57,6 +57,34 @@ python3 main.py
 
 The orchestrator will now listen for incoming task assignments on `http://localhost:8000/webhook/task`.
 
+#### Production-like run (recommended)
+
+```bash
+python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+#### Key configuration (environment variables)
+
+- **`MAO_WORKSPACE_ROOT`**: workspace root directory (default: `/tmp/master_agent_workspaces`)
+- **`MAO_RL_STATE_FILE`**: RL state JSON file path (default: `rl_state.json`)
+- **`MAO_ENABLE_GIT_CLONE`**: enable `git clone` for http(s) repos (default: `true`)
+- **`MAO_SIM_SEED`**: seed for deterministic simulation runs (default: unset / random)
+- **`MAO_SIM_SLEEP_S`**: simulated sleep duration (default: `1.0`, set to `0` for tests)
+
+#### Operations endpoints
+
+- **`GET /health`**: liveness
+- **`GET /ready`**: readiness (checks workspace + RL state path are writable)
+- **`GET /tasks/{task_id}`**: fetch task status/result for accepted tasks
+
+### 4. Dev workflow
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+python -m ruff check .
+python -m pytest -q
+```
+
 ### 3. Interactive Web UI Demo
 
 To visualize the Reinforcement Learning routing decisions in real time without external dependencies, open the bundled client-side simulation:
