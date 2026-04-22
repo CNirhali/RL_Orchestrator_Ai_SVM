@@ -66,6 +66,32 @@ To visualize the Reinforcement Learning routing decisions in real time without e
 
 ---
 
+## 🔍 Execution Preview
+
+Here is an example of the Master Agent routing a task, the Reviewer catching errors, and the RL Brain updating its context scores:
+
+```text
+==========================================
+       STARTING TASK task-001
+       Context Hash: b2d89d11
+==========================================
+[RL Brain] EXPLORING: chose cursor for context 'b2d89d11'
+
+[Writer Agent] Triggering cursor... (Attempt 1)
+[Writer Agent] cursor introduced errors.
+[Reviewer Agent] Analyzing changes...
+[Reviewer Agent] Changes rejected. Sending back to Writer.
+
+[Writer Agent] Triggering cursor... (Attempt 2)
+[Writer Agent] cursor completed the code changes.
+[Reviewer Agent] Analyzing changes...
+[Reviewer Agent] LGTM! Code is approved.
+
+[RL Brain] Updated Q-value for cursor in context 'b2d89d11': 0.00 -> 0.78
+```
+
+---
+
 ## 🤖 The RL Brain
 
 The system maintains a lightweight `q_table` for all registered IDEs. Over thousands of runs, if `cursor` successfully compiles code 90% of the time while `windsurf` struggles with your specific stack, the agent will learn to heavily bias `cursor` for future tickets!
