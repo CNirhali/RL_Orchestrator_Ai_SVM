@@ -7,7 +7,7 @@ class TaskLoggerAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs: Mapping[str, Any]):
         extra = dict(self.extra or {})
         kwargs_extra = dict(kwargs.get("extra") or {})
-        merged = {**kwargs_extra, **extra}
+        merged = {**extra, **kwargs_extra}
         kwargs = dict(kwargs)
         kwargs["extra"] = merged
         return msg, kwargs
