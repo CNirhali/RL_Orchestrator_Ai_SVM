@@ -34,7 +34,15 @@ class RLAgent:
         self.q_table[context_hash][ide] = new_q
         print(f"[RL Brain] Updated Q-value for {ide} in context '{context_hash}': {old_q:.2f} -> {new_q:.2f}")
 
-class IDEExecutor:
+class PlannerAgent:
+    def plan(self, desc: str):
+        print(f"[Planner Agent] Analyzing task '{desc}'...")
+        time.sleep(1)
+        complexity = "complex" if len(desc) > 50 else "simple"
+        print(f"[Planner Agent] Generated a {complexity} technical specification.")
+        return {"cost": random.uniform(0.01, 0.05)}
+
+class WriterAgent:
     def execute(self, ide_name, attempt):
         print(f"[Writer Agent] Triggering {ide_name}... (Attempt {attempt})")
         time.sleep(1)
@@ -47,7 +55,7 @@ class IDEExecutor:
             print(f"[Writer Agent] {ide_name} introduced errors.")
         return {"status": "success" if success else "failed", "metrics": metrics}
 
-class ReviewerExecutor:
+class ReviewerAgent:
     def review(self, writer_status):
         print(f"[Reviewer Agent] Analyzing changes...")
         time.sleep(1)
@@ -68,11 +76,12 @@ class HITLManager:
         return {"status": "escalated"}
 
 def run_dry_run():
-    print("Starting Stage 2 Advanced Pipeline Dry Run...\n")
+    print("Starting Modular Agents Pipeline Dry Run...\n")
     
     rl_agent = RLAgent()
-    executor = IDEExecutor()
-    reviewer = ReviewerExecutor()
+    planner = PlannerAgent()
+    writer = WriterAgent()
+    reviewer = ReviewerAgent()
     hitl = HITLManager()
     
     tasks = [
@@ -83,7 +92,8 @@ def run_dry_run():
     
     for task in tasks:
         task_id = task["id"]
-        context_hash = hashlib.md5((task["desc"]).encode()).hexdigest()[:8]
+        desc = task["desc"]
+        context_hash = hashlib.md5(desc.encode()).hexdigest()[:8]
         print(f"\n==========================================")
         print(f"       STARTING TASK {task_id}")
         print(f"       Context Hash: {context_hash}")
@@ -97,12 +107,18 @@ def run_dry_run():
         
         chosen_ide = rl_agent.choose_ide(context_hash)
         
+        # 1. Plan
+        plan_res = planner.plan(desc)
+        total_cost += plan_res["cost"]
+        
         while attempt <= 3:
-            exec_res = executor.execute(chosen_ide, attempt)
+            # 2. Execute
+            exec_res = writer.execute(chosen_ide, attempt)
             total_cost += exec_res["metrics"]["cost"]
             total_time += exec_res["metrics"]["time_taken"]
             total_lint += exec_res["metrics"]["lint_errors"]
             
+            # 3. Review
             rev_res = reviewer.review(exec_res["status"])
             total_cost += rev_res["metrics"]["cost"]
             
@@ -117,7 +133,6 @@ def run_dry_run():
             rl_agent.update_q_value(context_hash, chosen_ide, reward)
         else:
             hitl.escalate(task_id)
-            # Massive penalty for requiring human escalation
             rl_agent.update_q_value(context_hash, chosen_ide, -50.0)
             
 if __name__ == "__main__":

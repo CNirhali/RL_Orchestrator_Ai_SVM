@@ -218,14 +218,15 @@
             logEntry.className = `log-entry ${success ? 'success' : 'failed'}`;
             
             const strategy = explored ? 'EXPLORED (Random)' : 'EXPLOITED (Best Known)';
-            const statusStr = success ? '✅ SUCCESS' : '❌ FAILED';
+            const statusStr = success ? '✅ Writer Succeeded & Reviewer Approved' : '❌ Writer Failed & Reviewer Rejected';
             
             logEntry.innerHTML = `
                 <div style="font-weight: 600; margin-bottom: 0.5rem">Task: ${taskId}</div>
                 <div style="font-size: 0.9rem; color: var(--text-muted)">
-                    <div>Router: ${strategy} &rarr; <b style="color:var(--text)">${chosen}</b></div>
+                    <div>🤖 [Planner Agent] Generated Tech Spec</div>
+                    <div>🧠 [RL Brain] ${strategy} &rarr; <b style="color:var(--text)">${chosen}</b></div>
                     <div style="margin: 0.5rem 0">${statusStr}</div>
-                    <div>Q-Score: ${oldQ.toFixed(2)} &rarr; <b style="color:var(--text)">${newQ.toFixed(2)}</b></div>
+                    <div>📊 Q-Score: ${oldQ.toFixed(2)} &rarr; <b style="color:var(--text)">${newQ.toFixed(2)}</b></div>
                 </div>
             `;
             logs.prepend(logEntry);
