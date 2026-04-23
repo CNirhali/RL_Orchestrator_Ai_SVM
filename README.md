@@ -85,6 +85,24 @@ python -m ruff check .
 python -m pytest -q
 ```
 
+### 5. LangGraph test-suite planner
+
+Use the built-in LangGraph pipeline to create a best-fit suite from changed files.
+
+```bash
+# Plan only
+python suite_run.py --changed-path orchestrator/router.py --changed-path main.py
+
+# Plan + execute selected suites
+python suite_run.py --changed-path orchestrator/router.py --run
+```
+
+The planner returns:
+- `risk_level`: `low`, `medium`, or `high`
+- `suites`: selected suite tiers (for example `smoke`, `core`, `api_e2e`)
+- `commands`: concrete pytest commands chosen by the graph
+- `command_results`: per-command outputs when `--run` is provided
+
 ### 3. Interactive Web UI Demo
 
 To visualize the Reinforcement Learning routing decisions in real time without external dependencies, open the bundled client-side simulation:

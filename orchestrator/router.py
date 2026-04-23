@@ -52,7 +52,11 @@ def node_route(state: AgentState) -> AgentState:
 
 def node_execute(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
-    logger.info("state=executing attempt=%s ide=%s", state["attempt_count"], state["chosen_ide"])
+    logger.info(
+        "state=executing attempt=%s ide_agent=%s",
+        state["attempt_count"],
+        state["chosen_ide"],
+    )
     task_details = dict(state["request"])
     task_details["task_id"] = state["task_id"]
     result = executor.execute(state["chosen_ide"], state["workspace_path"], task_details)
@@ -77,8 +81,9 @@ def edge_after_review(state: AgentState) -> str:
 
 def node_hitl_escalation(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
-    logger.warning("state=hitl_escalation")
-    hitl_manager.escalate(state["task_id"], state["request"])
+    logger.warning("state=hitl_escalation agent=human_in_loop")
+    escalation_result = hitl_manager.escalate(state["task_id"], state["request"])
+    state["review_result"] = escalation_result
     
     # After escalation, we penalize the RL agent heavily and end.
     state["reward"] = -50.0 
