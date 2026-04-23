@@ -3,238 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Agent Orchestrator Demo</title>
+    <title>App Factory by Orchestrator</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         :root {
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --primary: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --primary: #000000;
+            --text: #09090b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
         }
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 2rem;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(to right, #60a5fa, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
+            justify-content: center;
         }
         .container {
             width: 100%;
-            max-width: 900px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
+            max-width: 600px;
+            padding: 2rem;
+            text-align: center;
         }
-        .card {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255,255,255,0.1);
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            letter-spacing: -0.05em;
+        }
+        p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        .input-group {
+            position: relative;
+            width: 100%;
+            display: flex;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            border-radius: 0.75rem;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
         }
         button {
+            position: absolute;
+            right: 0.5rem;
+            top: 0.5rem;
+            bottom: 0.5rem;
             background: var(--primary);
             color: white;
             border: none;
-            padding: 1rem 2rem;
+            padding: 0 1.5rem;
             border-radius: 0.5rem;
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            margin-top: 1rem;
+            transition: opacity 0.2s;
         }
         button:hover {
-            transform: translateY(-2px);
-            background: #2563eb;
+            opacity: 0.8;
         }
-        button:active {
-            transform: translateY(0);
+        button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
         }
-        .q-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .q-table th, .q-table td {
-            padding: 0.75rem;
+        
+        /* Progress UI */
+        #progress-container {
+            display: none;
+            margin-top: 3rem;
             text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
         }
-        .q-table th { color: var(--text-muted); font-weight: 500; }
-        .log-entry {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background: rgba(0,0,0,0.2);
+        .step {
+            display: flex;
+            align-items: center;
             margin-bottom: 1rem;
-            animation: slideIn 0.3s ease-out;
-            border-left: 4px solid var(--primary);
+            font-size: 1rem;
+            color: var(--text-muted);
+            transition: color 0.3s;
         }
-        .log-entry.success { border-color: var(--success); }
-        .log-entry.failed { border-color: var(--danger); }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+        .step:last-child { margin-bottom: 0; }
+        .step.active { color: var(--text); font-weight: 500; }
+        .step.done { color: var(--text); text-decoration: line-through; }
+        .icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .ide-bar {
-            height: 8px;
-            background: var(--primary);
-            border-radius: 4px;
-            transition: width 0.3s ease, background 0.3s ease;
-            min-width: 4px;
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        #logs { max-height: 400px; overflow-y: auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        #result-action {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+        .download-btn {
+            position: static;
+            display: inline-block;
+            padding: 0.75rem 2rem;
+        }
     </style>
 </head>
 <body>
-    <h1>Orchestrator AI</h1>
-    <p style="color: var(--text-muted)">Reinforcement Learning in Action</p>
-    <button onclick="triggerTask()" id="trigger-btn">Trigger Developer Task</button>
-
     <div class="container">
-        <div class="card">
-            <h2>🧠 The Brain (Q-Table)</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">The agent learns which IDE performs best over time.</p>
-            <table class="q-table">
-                <thead>
-                    <tr>
-                        <th>Worker IDE</th>
-                        <th>Score</th>
-                        <th style="width:40%">Visual</th>
-                    </tr>
-                </thead>
-                <tbody id="q-body">
-                    <!-- Populated by JS -->
-                </tbody>
-            </table>
+        <h1>What do you want to build?</h1>
+        <p>Prompt our AI agents and get a fully packaged app in seconds.</p>
+        
+        <div class="input-group">
+            <input type="text" id="prompt-input" placeholder="e.g. A beautiful landing page for my bakery..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button id="generate-btn" onclick="startGeneration()">Generate</button>
         </div>
-        <div class="card">
-            <h2>📜 Execution Logs</h2>
-            <div id="logs">
-                <div style="color: var(--text-muted)">Awaiting tasks...</div>
+
+        <div id="progress-container">
+            <div id="step-1" class="step"><div class="icon" id="icon-1">⏳</div> 🚀 Provisioning workspace...</div>
+            <div id="step-2" class="step"><div class="icon" id="icon-2">⏳</div> 🧠 Planning architecture...</div>
+            <div id="step-3" class="step"><div class="icon" id="icon-3">⏳</div> ✍️ Writing code...</div>
+            <div id="step-4" class="step"><div class="icon" id="icon-4">⏳</div> 🕵️ Reviewing and testing...</div>
+            <div id="step-5" class="step"><div class="icon" id="icon-5">⏳</div> 📦 Packaging final product...</div>
+            
+            <div id="result-action">
+                <p style="color: #10b981; font-weight: 500; margin-bottom: 1rem;">🎉 Your app is ready!</p>
+                <button class="download-btn" onclick="alert('Downloading your shiny new app!')">Download .zip</button>
             </div>
         </div>
     </div>
 
     <script>
-        // RL Agent logic (moved to frontend for standalone demo)
-        const ides = ["cursor", "windsurf", "claude", "vscode_cline"];
-        let qTable = { "cursor": 0.0, "windsurf": 0.0, "claude": 0.0, "vscode_cline": 0.0 };
-        const epsilon = 0.2;
-        const alpha = 0.1;
-        let taskCounter = 0;
-
-        function chooseIde() {
-            let chosen;
-            let explored;
-            if (Math.random() < epsilon) {
-                chosen = ides[Math.floor(Math.random() * ides.length)];
-                explored = true;
-            } else {
-                let maxScore = -Infinity;
-                for (const ide of ides) {
-                    if (qTable[ide] > maxScore) {
-                        maxScore = qTable[ide];
-                        chosen = ide;
-                    }
-                }
-                explored = false;
-            }
-            return { chosen, explored };
-        }
-
-        function updateQValue(ide, reward) {
-            const currentQ = qTable[ide];
-            const newQ = currentQ + alpha * (reward - currentQ);
-            qTable[ide] = newQ;
-            return { oldQ: currentQ, newQ: newQ };
-        }
-
-        function renderQTable() {
-            const tbody = document.getElementById('q-body');
-            tbody.innerHTML = '';
-            
-            const qValues = Object.values(qTable);
-            const minQ = Math.min(...qValues, -1);
-            const maxQ = Math.max(...qValues, 1);
-            const range = maxQ - minQ;
-
-            for (const ide of ides) {
-                const score = qTable[ide];
-                const widthPercent = ((score - minQ) / range) * 100;
-                let color = 'var(--primary)';
-                if(score > 0.05) color = 'var(--success)';
-                else if(score < -0.05) color = 'var(--danger)';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="font-weight: 500">${ide}</td>
-                        <td>${score.toFixed(2)}</td>
-                        <td><div class="ide-bar" style="width: ${Math.max(4, widthPercent)}%; background: ${color}"></div></td>
-                    </tr>
-                `;
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                startGeneration();
             }
         }
 
-        // Initial render
-        renderQTable();
+        async function startGeneration() {
+            const input = document.getElementById('prompt-input');
+            const btn = document.getElementById('generate-btn');
+            if (!input.value.trim()) return;
 
-        async function triggerTask() {
-            const btn = document.getElementById('trigger-btn');
-            btn.style.opacity = '0.7';
+            input.disabled = true;
+            btn.disabled = true;
+            btn.innerText = 'Building...';
 
-            // Simulate slight network delay
-            await new Promise(r => setTimeout(r, 200));
+            const container = document.getElementById('progress-container');
+            container.style.display = 'block';
+            document.getElementById('result-action').style.display = 'none';
 
-            taskCounter++;
-            const taskId = 'task-' + String(taskCounter).padStart(3, '0');
-            
-            // RL Pipeline
-            const { chosen, explored } = chooseIde();
-            const success = Math.random() < 0.66; // 66% chance of success
-            const reward = success ? 1.0 : -1.0;
-            const { oldQ, newQ } = updateQValue(chosen, reward);
-            
-            // Update Logs
-            const logs = document.getElementById('logs');
-            if(logs.innerHTML.includes('Awaiting tasks')) logs.innerHTML = '';
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${success ? 'success' : 'failed'}`;
-            
-            const strategy = explored ? 'EXPLORED (Random)' : 'EXPLOITED (Best Known)';
-            const statusStr = success ? '✅ Writer Succeeded & Reviewer Approved' : '❌ Writer Failed & Reviewer Rejected';
-            
-            logEntry.innerHTML = `
-                <div style="font-weight: 600; margin-bottom: 0.5rem">Task: ${taskId}</div>
-                <div style="font-size: 0.9rem; color: var(--text-muted)">
-                    <div>🤖 [Planner Agent] Generated Tech Spec</div>
-                    <div>🧠 [RL Brain] ${strategy} &rarr; <b style="color:var(--text)">${chosen}</b></div>
-                    <div style="margin: 0.5rem 0">${statusStr}</div>
-                    <div>📊 Q-Score: ${oldQ.toFixed(2)} &rarr; <b style="color:var(--text)">${newQ.toFixed(2)}</b></div>
-                </div>
-            `;
-            logs.prepend(logEntry);
+            // Reset steps
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`step-${i}`).className = 'step';
+                document.getElementById(`icon-${i}`).innerHTML = '⏳';
+            }
 
-            // Update Q-Table
-            renderQTable();
+            // Simulate the backend pipeline
+            await runStep(1, 1000); // Provisioning
+            await runStep(2, 2000); // Planning
+            await runStep(3, 3000); // Writing
+            await runStep(4, 1500); // Reviewing
+            await runStep(5, 1000); // Packaging
 
-            setTimeout(() => { btn.style.opacity = '1'; }, 200);
+            document.getElementById('result-action').style.display = 'block';
+            btn.innerText = 'Generate Another';
+            btn.disabled = false;
+            input.disabled = false;
+            input.value = '';
+        }
+
+        async function runStep(stepNum, duration) {
+            const stepEl = document.getElementById(`step-${stepNum}`);
+            const iconEl = document.getElementById(`icon-${stepNum}`);
+            
+            stepEl.className = 'step active';
+            iconEl.innerHTML = '<div class="spinner"></div>';
+            
+            await new Promise(r => setTimeout(r, duration));
+            
+            stepEl.className = 'step done';
+            iconEl.innerHTML = '✅';
         }
     </script>
 </body>
