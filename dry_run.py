@@ -7,11 +7,9 @@ class RLAgent:
         self.epsilon = 0.2
         self.ides = ["cursor", "windsurf", "claude", "vscode_cline"]
         self.q_table = {}
-
     def _ensure_context(self, context_hash: str):
         if context_hash not in self.q_table:
             self.q_table[context_hash] = {ide: 0.0 for ide in self.ides}
-
     def choose_ide(self, context_hash: str) -> str:
         self._ensure_context(context_hash)
         scores = self.q_table[context_hash]
@@ -22,11 +20,9 @@ class RLAgent:
             chosen = max(scores, key=scores.get)
             print(f"[RL Brain] EXPLOITING: chose {chosen} (Q={scores[chosen]:.2f}) for context '{context_hash}'")
         return chosen
-
     def calculate_reward(self, success, cost, time_taken, lint_errors):
         base = 10.0 if success else -10.0
         return base - (cost * 0.1) - (lint_errors * 0.5) - (time_taken * 0.05)
-
     def update_q_value(self, context_hash, ide, reward):
         self._ensure_context(context_hash)
         old_q = self.q_table[context_hash][ide]
@@ -35,12 +31,16 @@ class RLAgent:
         print(f"[RL Brain] Updated Q-value for {ide} in context '{context_hash}': {old_q:.2f} -> {new_q:.2f}")
 
 class PlannerAgent:
-    def plan(self, desc: str):
-        print(f"[Planner Agent] Analyzing task '{desc}'...")
+    def plan(self, chat_history: list):
+        print(f"[Planner Agent] Analyzing chat history ({len(chat_history)} messages)...")
         time.sleep(1)
-        complexity = "complex" if len(desc) > 50 else "simple"
-        print(f"[Planner Agent] Generated a {complexity} technical specification.")
-        return {"cost": random.uniform(0.01, 0.05)}
+        
+        if len(chat_history) <= 1:
+            print(f"[Planner Agent] ⚠️ Prompt is too vague. Requesting clarification.")
+            return {"status": "clarification_needed", "question": "Will your app need user accounts or a database?", "cost": 0.02}
+            
+        print(f"[Planner Agent] ✅ Gathered enough info. Generated a technical blueprint.")
+        return {"status": "blueprint_ready", "cost": 0.04}
 
 class WriterAgent:
     def execute(self, ide_name, attempt):
@@ -68,72 +68,66 @@ class ReviewerAgent:
             print(f"[Reviewer Agent] Changes rejected. Sending back to Writer.")
         return {"status": "approved" if approved else "rejected", "metrics": {"cost": cost}}
 
-class HITLManager:
-    def escalate(self, task_id):
-        print(f"\n[HITL Manager] 🚨 ESCALATION REQUIRED FOR TASK {task_id}")
-        print(f"[HITL Manager] Sending notification to Microsoft Teams / Slack...")
+class PackagerAgent:
+    def package(self):
+        print(f"[Packager Agent] Zipping workspace into App.zip...")
         time.sleep(1)
-        return {"status": "escalated"}
+        return {"status": "packaged"}
 
 def run_dry_run():
-    print("Starting Modular Agents Pipeline Dry Run...\n")
+    print("==========================================")
+    print("   Guided Co-Creation CLI Simulation      ")
+    print("==========================================\n")
     
     rl_agent = RLAgent()
     planner = PlannerAgent()
     writer = WriterAgent()
     reviewer = ReviewerAgent()
-    hitl = HITLManager()
+    packager = PackagerAgent()
     
-    tasks = [
-        {"id": "task-001", "desc": "Fix typo in frontend header."},
-        {"id": "task-002", "desc": "Refactor backend microservice to use Redis pub/sub queueing. Very complex distributed system problem."},
-        {"id": "task-003", "desc": "Fix typo in footer."}
-    ]
+    # Simulate User Chat
+    chat_history = [{"role": "user", "content": "A bakery website"}]
+    context_hash = hashlib.md5("bakery website".encode()).hexdigest()[:8]
     
-    for task in tasks:
-        task_id = task["id"]
-        desc = task["desc"]
-        context_hash = hashlib.md5(desc.encode()).hexdigest()[:8]
-        print(f"\n==========================================")
-        print(f"       STARTING TASK {task_id}")
-        print(f"       Context Hash: {context_hash}")
-        print(f"==========================================")
+    print(f"👤 USER: {chat_history[0]['content']}")
+    
+    # 1. Plan Phase 1 (Needs Clarification)
+    plan_res = planner.plan(chat_history)
+    if plan_res["status"] == "clarification_needed":
+        chat_history.append({"role": "ai", "content": plan_res["question"]})
+        print(f"🤖 AI: {plan_res['question']}")
         
-        attempt = 1
-        total_cost = 0.0
-        total_time = 0.0
-        total_lint = 0
-        final_status = "failed"
+        # Simulate User Response
+        user_reply = "No, just a static menu display please."
+        chat_history.append({"role": "user", "content": user_reply})
+        print(f"👤 USER: {user_reply}")
+        
+    # 2. Plan Phase 2 (Blueprint Ready)
+    plan_res2 = planner.plan(chat_history)
+    
+    # Pipeline execution after approval
+    if plan_res2["status"] == "blueprint_ready":
+        print(f"🤖 AI: Great! Generating your app now...\n")
         
         chosen_ide = rl_agent.choose_ide(context_hash)
-        
-        # 1. Plan
-        plan_res = planner.plan(desc)
-        total_cost += plan_res["cost"]
+        attempt = 1
+        final_status = "failed"
         
         while attempt <= 3:
-            # 2. Execute
             exec_res = writer.execute(chosen_ide, attempt)
-            total_cost += exec_res["metrics"]["cost"]
-            total_time += exec_res["metrics"]["time_taken"]
-            total_lint += exec_res["metrics"]["lint_errors"]
-            
-            # 3. Review
             rev_res = reviewer.review(exec_res["status"])
-            total_cost += rev_res["metrics"]["cost"]
             
             if rev_res["status"] == "approved":
                 final_status = "approved"
                 break
-                
             attempt += 1
             
         if final_status == "approved":
-            reward = rl_agent.calculate_reward(True, total_cost, total_time, total_lint)
-            rl_agent.update_q_value(context_hash, chosen_ide, reward)
+            packager.package()
+            rl_agent.update_q_value(context_hash, chosen_ide, 10.0)
+            print(f"\n🎉 App generation complete! Ready for download.")
         else:
-            hitl.escalate(task_id)
-            rl_agent.update_q_value(context_hash, chosen_ide, -50.0)
+            print(f"\n❌ Pipeline failed. Please try again.")
             
 if __name__ == "__main__":
     run_dry_run()
