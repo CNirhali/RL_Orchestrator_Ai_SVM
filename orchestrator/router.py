@@ -12,6 +12,7 @@ from orchestrator.rl_agent import rl_agent
 class AgentState(TypedDict):
     task_id: str
     request: dict
+    chat_history: list
     workspace_path: str
     context_hash: str
     chosen_ide: str
@@ -53,9 +54,19 @@ def node_route(state: AgentState) -> AgentState:
 def node_plan(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
     logger.info("state=planning")
-    result = planner_agent.plan(state["request"])
+    
+    # Pass chat history to planner
+    req = dict(state["request"])
+    req["chat_history"] = state.get("chat_history", [])
+    
+    result = planner_agent.plan(req)
     state["plan_result"] = result
     return state
+
+def edge_after_plan(state: AgentState) -> str:
+    if state["plan_result"].get("status") == "clarification_needed":
+        return END # Pause pipeline to wait for user
+    return "execute"
 
 def node_execute(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
@@ -138,7 +149,7 @@ workflow.add_node("package", node_package)
 workflow.set_entry_point("provision")
 workflow.add_edge("provision", "route")
 workflow.add_edge("route", "plan")
-workflow.add_edge("plan", "execute")
+workflow.add_conditional_edges("plan", edge_after_plan)
 workflow.add_edge("execute", "review")
 workflow.add_conditional_edges("review", edge_after_review)
 workflow.add_conditional_edges("evaluate", edge_after_evaluate)

@@ -10,9 +10,11 @@
             --bg: #fafafa;
             --surface: #ffffff;
             --primary: #000000;
+            --primary-hover: #333333;
             --text: #09090b;
             --text-muted: #71717a;
             --border: #e4e4e7;
+            --user-msg: #f4f4f5;
         }
         body {
             font-family: 'Inter', system-ui, sans-serif;
@@ -23,194 +25,318 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
         }
-        .container {
+        header {
             width: 100%;
-            max-width: 600px;
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
             font-weight: 600;
-            letter-spacing: -0.05em;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
         }
-        p {
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-        }
-        .input-group {
-            position: relative;
+        .chat-container {
+            flex-grow: 1;
             width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+            padding: 2rem;
             display: flex;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-            border-radius: 0.75rem;
+            flex-direction: column;
+            gap: 1.5rem;
         }
-        input[type="text"] {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            font-size: 1.1rem;
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .message.ai {
+            align-self: flex-start;
+        }
+        .bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+        .message.user .bubble {
+            background: var(--user-msg);
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message.ai .bubble {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        }
+        .blueprint-card {
+            margin-top: 1rem;
             border: 1px solid var(--border);
             border-radius: 0.75rem;
-            outline: none;
-            transition: border-color 0.2s;
+            padding: 1.5rem;
+            background: #fafafa;
         }
-        input[type="text"]:focus {
-            border-color: var(--primary);
-        }
-        button {
-            position: absolute;
-            right: 0.5rem;
-            top: 0.5rem;
-            bottom: 0.5rem;
+        .blueprint-card h3 { margin: 0 0 1rem 0; font-size: 1.1rem; }
+        .blueprint-card ul { margin: 0; padding-left: 1.5rem; color: var(--text-muted); }
+        .blueprint-card li { margin-bottom: 0.5rem; }
+        .action-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 0 1.5rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+        .action-btn:hover { background: var(--primary-hover); }
+        .action-btn.secondary {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            margin-left: 0.5rem;
+        }
+        .action-btn.secondary:hover { background: var(--user-msg); }
+        
+        /* Input Area */
+        .input-area {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            background: var(--bg);
+        }
+        .input-box {
+            position: relative;
+            display: flex;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            background: white;
+            border: 1px solid var(--border);
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 1.25rem 1.5rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 1rem;
+            outline: none;
+        }
+        .send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            margin: 0.5rem;
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
             font-weight: 500;
             cursor: pointer;
             transition: opacity 0.2s;
         }
-        button:hover {
-            opacity: 0.8;
-        }
-        button:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
-        }
-        
-        /* Progress UI */
-        #progress-container {
-            display: none;
-            margin-top: 3rem;
-            text-align: left;
-            background: var(--surface);
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-        }
-        .step {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-            color: var(--text-muted);
-            transition: color 0.3s;
-        }
-        .step:last-child { margin-bottom: 0; }
+        .send-btn:hover { opacity: 0.8; }
+        .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+        /* Progress Steps */
+        .progress-steps { margin-top: 1rem; font-size: 0.95rem; }
+        .step { display: flex; align-items: center; margin-bottom: 0.5rem; color: var(--text-muted); }
         .step.active { color: var(--text); font-weight: 500; }
         .step.done { color: var(--text); text-decoration: line-through; }
-        .icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.75rem;}
+        .icon { margin-right: 0.75rem; font-size: 1rem;}
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        #result-action {
-            display: none;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border);
-            text-align: center;
-        }
-        .download-btn {
-            position: static;
-            display: inline-block;
-            padding: 0.75rem 2rem;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>What do you want to build?</h1>
-        <p>Prompt our AI agents and get a fully packaged app in seconds.</p>
-        
-        <div class="input-group">
-            <input type="text" id="prompt-input" placeholder="e.g. A beautiful landing page for my bakery..." autocomplete="off" onkeypress="handleEnter(event)">
-            <button id="generate-btn" onclick="startGeneration()">Generate</button>
-        </div>
+    <header>App Factory</header>
 
-        <div id="progress-container">
-            <div id="step-1" class="step"><div class="icon" id="icon-1">⏳</div> 🚀 Provisioning workspace...</div>
-            <div id="step-2" class="step"><div class="icon" id="icon-2">⏳</div> 🧠 Planning architecture...</div>
-            <div id="step-3" class="step"><div class="icon" id="icon-3">⏳</div> ✍️ Writing code...</div>
-            <div id="step-4" class="step"><div class="icon" id="icon-4">⏳</div> 🕵️ Reviewing and testing...</div>
-            <div id="step-5" class="step"><div class="icon" id="icon-5">⏳</div> 📦 Packaging final product...</div>
-            
-            <div id="result-action">
-                <p style="color: #10b981; font-weight: 500; margin-bottom: 1rem;">🎉 Your app is ready!</p>
-                <button class="download-btn" onclick="alert('Downloading your shiny new app!')">Download .zip</button>
+    <div class="chat-container" id="chat">
+        <div class="message ai">
+            <div class="bubble">
+                👋 Hi! I'm the Orchestrator AI. What kind of app or website do you want to build today?
             </div>
         </div>
     </div>
 
+    <div class="input-area">
+        <div class="input-box">
+            <input type="text" id="prompt-input" placeholder="e.g. A marketplace for local bakers..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
     <script>
+        let chatState = "init"; // init -> clarify -> blueprint -> building -> iterate
+
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('prompt-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function scrollToBottom() {
+            chat.scrollTop = chat.scrollHeight;
+        }
+
         function handleEnter(e) {
-            if (e.key === 'Enter') {
-                startGeneration();
-            }
+            if (e.key === 'Enter') sendMessage();
         }
 
-        async function startGeneration() {
-            const input = document.getElementById('prompt-input');
-            const btn = document.getElementById('generate-btn');
-            if (!input.value.trim()) return;
+        function addUserMessage(text) {
+            chat.innerHTML += `
+                <div class="message user">
+                    <div class="bubble">${text}</div>
+                </div>
+            `;
+            scrollToBottom();
+        }
 
-            input.disabled = true;
-            btn.disabled = true;
-            btn.innerText = 'Building...';
+        function addAiMessage(htmlContent) {
+            const div = document.createElement('div');
+            div.className = 'message ai';
+            div.innerHTML = `<div class="bubble">${htmlContent}</div>`;
+            chat.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
 
-            const container = document.getElementById('progress-container');
-            container.style.display = 'block';
-            document.getElementById('result-action').style.display = 'none';
+        async function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
 
-            // Reset steps
-            for (let i = 1; i <= 5; i++) {
-                document.getElementById(`step-${i}`).className = 'step';
-                document.getElementById(`icon-${i}`).innerHTML = '⏳';
-            }
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
 
-            // Simulate the backend pipeline
-            await runStep(1, 1000); // Provisioning
-            await runStep(2, 2000); // Planning
-            await runStep(3, 3000); // Writing
-            await runStep(4, 1500); // Reviewing
-            await runStep(5, 1000); // Packaging
-
-            document.getElementById('result-action').style.display = 'block';
-            btn.innerText = 'Generate Another';
-            btn.disabled = false;
-            input.disabled = false;
+            addUserMessage(text);
             input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            // Typing indicator
+            const typing = addAiMessage('<span style="color: var(--text-muted)">Thinking...</span>');
+            await sleep(1500);
+            typing.remove();
+
+            if (chatState === "init") {
+                // Multi-Turn Chat Clarification
+                addAiMessage("That sounds like a great idea! Since this is a marketplace, will you need users to be able to create accounts and log in?");
+                chatState = "clarify";
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            } 
+            else if (chatState === "clarify") {
+                // Visual Blueprint Generation
+                addAiMessage(`
+                    Got it. Our <b>Planner Agent</b> has generated a technical blueprint for your app based on our chat:
+                    <div class="blueprint-card">
+                        <h3>📋 App Blueprint</h3>
+                        <ul>
+                            <li>Frontend: React + Tailwind CSS</li>
+                            <li>Backend: Node.js API</li>
+                            <li>Auth: Standard Email/Password</li>
+                            <li>Pages: Landing, Login, Dashboard, Checkout</li>
+                        </ul>
+                        <button class="action-btn" onclick="approveBlueprint(this)">Approve & Build</button>
+                        <button class="action-btn secondary" onclick="alert('In a real app, you would type your modifications here!')">Modify</button>
+                    </div>
+                `);
+                chatState = "blueprint";
+            }
+            else if (chatState === "iterate") {
+                // Iterative Iteration Phase
+                const progressDiv = addAiMessage(`
+                    Okay, routing this tweak back to the Writer Agent...
+                    <div class="progress-steps" id="iter-prog">
+                        <div id="iter-step-1" class="step active"><div class="spinner"></div> ✍️ Rewriting code...</div>
+                        <div id="iter-step-2" class="step"><div class="icon">⏳</div> 🕵️ Reviewing changes...</div>
+                        <div id="iter-step-3" class="step"><div class="icon">⏳</div> 📦 Repackaging...</div>
+                    </div>
+                `);
+                
+                await sleep(2000);
+                document.getElementById('iter-step-1').className = 'step done';
+                document.getElementById('iter-step-1').innerHTML = '<div class="icon">✅</div> ✍️ Rewriting code...';
+                document.getElementById('iter-step-2').className = 'step active';
+                document.getElementById('iter-step-2').innerHTML = '<div class="spinner"></div> 🕵️ Reviewing changes...';
+
+                await sleep(1500);
+                document.getElementById('iter-step-2').className = 'step done';
+                document.getElementById('iter-step-2').innerHTML = '<div class="icon">✅</div> 🕵️ Reviewing changes...';
+                document.getElementById('iter-step-3').className = 'step active';
+                document.getElementById('iter-step-3').innerHTML = '<div class="spinner"></div> 📦 Repackaging...';
+
+                await sleep(1000);
+                document.getElementById('iter-step-3').className = 'step done';
+                document.getElementById('iter-step-3').innerHTML = '<div class="icon">✅</div> 📦 Repackaging...';
+
+                addAiMessage(`
+                    Done! The changes have been applied. <br><br>
+                    <button class="action-btn" onclick="alert('Downloading App_v2.zip')">Download Updated App (.zip)</button>
+                `);
+
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
         }
 
-        async function runStep(stepNum, duration) {
-            const stepEl = document.getElementById(`step-${stepNum}`);
-            const iconEl = document.getElementById(`icon-${stepNum}`);
+        async function approveBlueprint(btnEl) {
+            // Disable blueprint buttons
+            btnEl.parentElement.querySelectorAll('button').forEach(b => b.style.display = 'none');
             
-            stepEl.className = 'step active';
-            iconEl.innerHTML = '<div class="spinner"></div>';
+            chatState = "building";
             
-            await new Promise(r => setTimeout(r, duration));
-            
-            stepEl.className = 'step done';
-            iconEl.innerHTML = '✅';
+            const progressMsg = addAiMessage(`
+                Awesome! Routing the blueprint to our AI Agents...
+                <div class="progress-steps" id="build-prog">
+                    <div id="build-step-1" class="step active"><div class="spinner"></div> 🚀 Provisioning workspace...</div>
+                    <div id="build-step-2" class="step"><div class="icon">⏳</div> ✍️ Writing code...</div>
+                    <div id="build-step-3" class="step"><div class="icon">⏳</div> 🕵️ Reviewing and testing...</div>
+                    <div id="build-step-4" class="step"><div class="icon">⏳</div> 📦 Packaging final product...</div>
+                </div>
+            `);
+
+            await sleep(1000);
+            document.getElementById('build-step-1').className = 'step done';
+            document.getElementById('build-step-1').innerHTML = '<div class="icon">✅</div> 🚀 Provisioning workspace...';
+            document.getElementById('build-step-2').className = 'step active';
+            document.getElementById('build-step-2').innerHTML = '<div class="spinner"></div> ✍️ Writing code...';
+
+            await sleep(2500);
+            document.getElementById('build-step-2').className = 'step done';
+            document.getElementById('build-step-2').innerHTML = '<div class="icon">✅</div> ✍️ Writing code...';
+            document.getElementById('build-step-3').className = 'step active';
+            document.getElementById('build-step-3').innerHTML = '<div class="spinner"></div> 🕵️ Reviewing and testing...';
+
+            await sleep(1500);
+            document.getElementById('build-step-3').className = 'step done';
+            document.getElementById('build-step-3').innerHTML = '<div class="icon">✅</div> 🕵️ Reviewing and testing...';
+            document.getElementById('build-step-4').className = 'step active';
+            document.getElementById('build-step-4').innerHTML = '<div class="spinner"></div> 📦 Packaging final product...';
+
+            await sleep(1000);
+            document.getElementById('build-step-4').className = 'step done';
+            document.getElementById('build-step-4').innerHTML = '<div class="icon">✅</div> 📦 Packaging final product...';
+
+            addAiMessage(`
+                🎉 <b>Your app is ready!</b><br><br>
+                <button class="action-btn" onclick="alert('Downloading App.zip')">Download App (.zip)</button>
+                <br><br>
+                <span style="color: var(--text-muted); font-size: 0.9rem;">
+                    Want to change something? Just type "Make the header blue" below to iteratively update the code!
+                </span>
+            `);
+
+            chatState = "iterate";
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
         }
     </script>
 </body>
