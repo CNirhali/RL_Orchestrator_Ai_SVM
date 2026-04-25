@@ -20,13 +20,16 @@
 graph TD
     A[Webhook: Teams / Jira] -->|New Task| B(FastAPI Server)
     B --> C{LangGraph Router}
-    C -->|1. Provision| D[Workspace Cloned & Context Gathered]
+    C -->|1. Provision| D[Planner & Architect Agents]
     D -->|2. Route| E((RL Brain / Q-Table))
     E -->|Exploit / Explore| F[Choose Best IDE]
-    F -->|3. Execute| G[Run Cursor / Windsurf / etc.]
-    G -->|4. Evaluate| H{Tests & Lint Pass?}
-    H -->|Yes: +1 Reward| I[Update RL Policy]
-    H -->|No: -1 Reward| I
+    F -->|3. Execute| G[Writer & Reviewer Agents]
+    G -->|4. Security| H{Security Agent Scan}
+    H -->|Vulnerable: -1 Reward| I[Update RL Policy]
+    H -->|Safe| J{QA Agent Tests}
+    J -->|Failed: -1 Reward| I
+    J -->|Passed| K[DevOps Agent Deployment]
+    K -->|Success: +1 Reward| I
 ```
 
 ## 🚀 Getting Started
@@ -109,6 +112,8 @@ To visualize the Reinforcement Learning routing decisions in real time without e
 
 1. Open `index.html` in your browser.
 2. Click **"Trigger Developer Task"** to watch the Master Agent dynamically score and evaluate different IDE workers!
+
+![Interactive UI Demo](demo_recording.webp)
 
 ---
 

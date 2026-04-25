@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Factory by Orchestrator</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        
         :root {
+            --bg: #0b1120;
+            --surface: rgba(30, 41, 59, 0.7);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --modal-bg: rgba(15, 23, 42, 0.95);
             --bg: #fafafa;
             --surface: #ffffff;
             --primary: #000000;
@@ -16,16 +29,343 @@
             --border: #e4e4e7;
             --user-msg: #f4f4f5;
         }
+
         body {
-            font-family: 'Inter', system-ui, sans-serif;
+            font-family: 'Outfit', system-ui, sans-serif;
             background: var(--bg);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(167, 139, 250, 0.15) 0%, transparent 50%);
+            background-attachment: fixed;
             color: var(--text);
             margin: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background: var(--primary-hover);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: none;
+        }
+
+        .q-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .q-table th { 
+            color: var(--text-muted); 
+            font-weight: 500; 
+            padding: 0.75rem;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .q-table td {
+            padding: 1rem 0.75rem;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .q-table tr td:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
+        .q-table tr td:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+        .log-entry {
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            background: rgba(0,0,0,0.3);
+            margin-bottom: 1rem;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .log-entry.success { border-color: var(--success); }
+        .log-entry.failed { border-color: var(--danger); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(8px); }
+        }
+        
+        @keyframes modalPopIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .ide-bar {
+            height: 8px;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease;
+            min-width: 4px;
+        }
+
+        #logs { max-height: 500px; overflow-y: auto; padding-right: 0.5rem; }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal {
+            background: var(--modal-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: none;
+            transform: scale(0.95) translateY(10px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            animation: modalPopIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal h2 { margin-top: 0; margin-bottom: 1.5rem; }
+        
+        .role-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .role-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .role-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        textarea.prompt-input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            box-sizing: border-box;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        textarea.prompt-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Master Agent Orchestrator</h1>
+    <div class="subtitle">Autonomous AI Tech Lead with Reinforcement Learning</div>
+    <button onclick="openRoleSelection()" id="trigger-btn">
+        <span style="margin-right: 8px;">🚀</span> Trigger Developer Task
+    </button>
+
+    <div class="container">
+        <div class="card">
+            <h2 style="display: flex; align-items: center; gap: 8px; margin-top: 0;">
+                🧠 The RL Brain (Q-Table)
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">The agent learns which IDE performs best over time based on successful deployments.</p>
+            <table class="q-table">
+                <thead>
+                    <tr>
+                        <th>Worker IDE</th>
+                        <th style="width: 20%">Score</th>
+                        <th style="width: 45%">Performance Visual</th>
+                    </tr>
+                </thead>
+                <tbody id="q-body">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h2 style="display: flex; align-items: center; gap: 8px; margin-top: 0;">
+                📜 Execution Logs
+            </h2>
+            <div id="logs">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0;">
+                    Awaiting tasks... click the trigger button above.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay">
+        <!-- Role Selection Modal -->
+        <div class="modal" id="role-modal">
+            <h2>Select Tech Role Context</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                To generate a highly specific task, what domain does this ticket belong to?
+            </p>
+            <div class="role-grid">
+                <div class="role-card" onclick="selectRole('Frontend')">
+                    <span class="role-icon">🎨</span>
+                    <strong>Frontend</strong>
+                </div>
+                <div class="role-card" onclick="selectRole('Backend')">
+                    <span class="role-icon">⚙️</span>
+                    <strong>Backend</strong>
+                </div>
+                <div class="role-card" onclick="selectRole('DevOps')">
+                    <span class="role-icon">🚀</span>
+                    <strong>DevOps</strong>
+                </div>
+                <div class="role-card" onclick="selectRole('Data Science')">
+                    <span class="role-icon">📊</span>
+                    <strong>Data Science</strong>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button class="secondary" onclick="closeModals()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Prompt Refinement Modal -->
+        <div class="modal" id="prompt-modal">
+            <h2>Refine Task Prompt</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.95rem;">
+                The Planner Agent has drafted the following instructions. You may refine them before handing off to the Orchestrator.
+            </p>
+            <textarea id="prompt-textarea" class="prompt-input"></textarea>
+            <div class="modal-actions">
+                <button class="secondary" onclick="backToRoles()">Back</button>
+                <button onclick="acceptPromptAndRun()">Accept & Run Task</button>
         header {
             width: 100%;
             padding: 1.5rem;
@@ -172,6 +512,78 @@
     </div>
 
     <script>
+        // RL Agent logic
+        const ides = ["cursor", "windsurf", "claude", "vscode_cline"];
+        let qTable = { "cursor": 0.0, "windsurf": 0.0, "claude": 0.0, "vscode_cline": 0.0 };
+        const epsilon = 0.2;
+        const alpha = 0.1;
+        let taskCounter = 0;
+        let selectedRole = "";
+
+        // UI State Management
+        const overlay = document.getElementById('modal-overlay');
+        const roleModal = document.getElementById('role-modal');
+        const promptModal = document.getElementById('prompt-modal');
+        const promptTextarea = document.getElementById('prompt-textarea');
+
+        function openRoleSelection() {
+            overlay.classList.add('active');
+            roleModal.classList.add('active');
+            promptModal.classList.remove('active');
+        }
+
+        function closeModals() {
+            overlay.classList.remove('active');
+            roleModal.classList.remove('active');
+            promptModal.classList.remove('active');
+        }
+
+        function backToRoles() {
+            promptModal.classList.remove('active');
+            roleModal.classList.add('active');
+        }
+
+        const rolePrompts = {
+            'Frontend': "Implement a responsive glassmorphism navigation bar using React and TailwindCSS. Ensure it collapses smoothly on mobile devices and includes semantic HTML tags.",
+            'Backend': "Create a scalable FastAPI endpoint for user authentication. Implement JWT token generation, secure password hashing using bcrypt, and comprehensive unit tests.",
+            'DevOps': "Write a GitHub Actions workflow to automatically run pytest, build a Docker image, and deploy to AWS ECS upon a merge to the main branch.",
+            'Data Science': "Train an XGBoost model to predict user churn. Handle missing values, perform feature importance analysis, and expose the inference logic via a simple REST API."
+        };
+
+        function selectRole(role) {
+            selectedRole = role;
+            roleModal.classList.remove('active');
+            
+            // Populate draft prompt
+            promptTextarea.value = rolePrompts[role] || "Please implement the requested feature according to the design specs.";
+            
+            promptModal.classList.add('active');
+        }
+
+        function acceptPromptAndRun() {
+            const finalPrompt = promptTextarea.value;
+            closeModals();
+            triggerSimulation(selectedRole, finalPrompt);
+        }
+
+        // Core RL Simulation Logic
+        function chooseIde() {
+            let chosen;
+            let explored;
+            if (Math.random() < epsilon) {
+                chosen = ides[Math.floor(Math.random() * ides.length)];
+                explored = true;
+            } else {
+                let maxScore = -Infinity;
+                for (const ide of ides) {
+                    if (qTable[ide] > maxScore) {
+                        maxScore = qTable[ide];
+                        chosen = ide;
+                    }
+                }
+                explored = false;
+            }
+            return { chosen, explored };
         let chatState = "init"; // init -> clarify -> blueprint -> building -> iterate
 
         const chat = document.getElementById('chat');
@@ -186,6 +598,33 @@
             if (e.key === 'Enter') sendMessage();
         }
 
+        function renderQTable() {
+            const tbody = document.getElementById('q-body');
+            tbody.innerHTML = '';
+            
+            const qValues = Object.values(qTable);
+            const minQ = Math.min(...qValues, -1);
+            const maxQ = Math.max(...qValues, 1);
+            const range = maxQ - minQ;
+
+            for (const ide of ides) {
+                const score = qTable[ide];
+                const widthPercent = ((score - minQ) / range) * 100;
+                let color = 'var(--primary)';
+                if(score > 0.05) color = 'var(--success)';
+                else if(score < -0.05) color = 'var(--danger)';
+
+                // Formatting IDE names nicely
+                const formattedName = ide === 'vscode_cline' ? 'VS Code Cline' : ide.charAt(0).toUpperCase() + ide.slice(1);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: 600; color: var(--text)">${formattedName}</td>
+                        <td style="font-family: monospace; font-size: 1.1rem">${score.toFixed(2)}</td>
+                        <td><div class="ide-bar" style="width: ${Math.max(4, widthPercent)}%; background: ${color}"></div></td>
+                    </tr>
+                `;
+            }
         function addUserMessage(text) {
             chat.innerHTML += `
                 <div class="message user">
@@ -204,6 +643,74 @@
             return div;
         }
 
+        async function triggerSimulation(role, promptContext) {
+            const btn = document.getElementById('trigger-btn');
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate slight network delay
+            await new Promise(r => setTimeout(r, 400));
+
+            taskCounter++;
+            const taskId = 'TASK-' + String(taskCounter).padStart(4, '0');
+            
+            // RL Pipeline
+            const { chosen, explored } = chooseIde();
+            const writerSuccess = Math.random() < 0.75;
+            const secSuccess = Math.random() < 0.90;
+            const qaSuccess = Math.random() < 0.85;
+            const overallSuccess = writerSuccess && secSuccess && qaSuccess;
+            
+            const reward = overallSuccess ? 1.0 : -1.0;
+            const { oldQ, newQ } = updateQValue(chosen, reward);
+            
+            // Update Logs
+            const logs = document.getElementById('logs');
+            if(logs.innerHTML.includes('Awaiting tasks')) logs.innerHTML = '';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${overallSuccess ? 'success' : 'failed'}`;
+            
+            const strategy = explored ? '<span style="color:var(--primary)">EXPLORED</span> (Random Strategy)' : '<span style="color:var(--success)">EXPLOITED</span> (Best Known)';
+            const formattedChosen = chosen === 'vscode_cline' ? 'VS Code Cline' : chosen.charAt(0).toUpperCase() + chosen.slice(1);
+            
+            let pipelineLogs = `
+                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; font-size: 0.85rem; border-left: 2px solid var(--text-muted)">
+                    <strong>Context:</strong> ${role}<br>
+                    <strong>Prompt:</strong> <i>"${promptContext.substring(0, 60)}${promptContext.length > 60 ? '...' : ''}"</i>
+                </div>
+                <div>🤖 <b>[Planner Agent]</b> Analyzed requirements</div>
+                <div>🧠 <b>[RL Brain]</b> ${strategy} &rarr; Assigned to <b style="color:var(--text)">${formattedChosen}</b></div>`;
+            
+            if (!writerSuccess) {
+                pipelineLogs += `<div style="margin: 0.5rem 0; color: var(--danger)">❌ <b>[Reviewer Agent]</b> Rejected: Syntax errors detected in code.</div>`;
+            } else {
+                pipelineLogs += `<div style="margin: 0.5rem 0; color: var(--success)">✅ <b>[Reviewer Agent]</b> Approved: Code follows style guides.</div>`;
+                if (!secSuccess) {
+                    pipelineLogs += `<div style="color: var(--danger)">⚠️ <b>[Security Agent]</b> Detected critical vulnerability. Pipeline aborted.</div>`;
+                } else {
+                    pipelineLogs += `<div style="color: var(--success)">🛡️ <b>[Security Agent]</b> Scanned: 0 Vulnerabilities</div>`;
+                    if (!qaSuccess) {
+                        pipelineLogs += `<div style="color: var(--danger)">❌ <b>[QA Agent]</b> Unit tests failed. Pipeline aborted.</div>`;
+                    } else {
+                        pipelineLogs += `<div style="color: var(--success)">✅ <b>[QA Agent]</b> E2E Test Suite Passed</div>
+                                         <div style="color: var(--primary); margin-top: 0.25rem;">🚀 <b>[DevOps Agent]</b> Deployed successfully to staging environment</div>`;
+                    }
+                }
+            }
+            
+            logEntry.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem">${taskId}</strong>
+                    <span style="font-size: 0.85rem; background: ${overallSuccess ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; padding: 0.2rem 0.5rem; border-radius: 1rem; color: ${overallSuccess ? 'var(--success)' : 'var(--danger)'}">
+                        ${overallSuccess ? 'SUCCESS' : 'FAILED'}
+                    </span>
+                </div>
+                <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;">
+                    ${pipelineLogs}
+                    <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed var(--border)">
+                        📊 Q-Score for <b>${formattedChosen}</b> updated: <span style="font-family: monospace">${oldQ.toFixed(2)}</span> &rarr; <b style="color:var(--text); font-family: monospace">${newQ.toFixed(2)}</b>
+                    </div>
         async function sleep(ms) {
             return new Promise(r => setTimeout(r, ms));
         }
@@ -333,6 +840,10 @@
                 </span>
             `);
 
+            setTimeout(() => { 
+                btn.style.opacity = '1'; 
+                btn.style.pointerEvents = 'auto';
+            }, 300);
             chatState = "iterate";
             input.disabled = false;
             sendBtn.disabled = false;
