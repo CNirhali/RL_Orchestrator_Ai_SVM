@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Agent Orchestrator Demo</title>
+    <title>App Factory by Orchestrator</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
@@ -20,6 +20,14 @@
             --glass-bg: rgba(15, 23, 42, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
             --modal-bg: rgba(15, 23, 42, 0.95);
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --primary: #000000;
+            --primary-hover: #333333;
+            --text: #09090b;
+            --text-muted: #71717a;
+            --border: #e4e4e7;
+            --user-msg: #f4f4f5;
         }
 
         body {
@@ -31,7 +39,7 @@
             background-attachment: fixed;
             color: var(--text);
             margin: 0;
-            padding: 2rem;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -358,7 +366,148 @@
             <div class="modal-actions">
                 <button class="secondary" onclick="backToRoles()">Back</button>
                 <button onclick="acceptPromptAndRun()">Accept & Run Task</button>
+        header {
+            width: 100%;
+            padding: 1.5rem;
+            text-align: center;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+        .chat-container {
+            flex-grow: 1;
+            width: 100%;
+            max-width: 800px;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .message.ai {
+            align-self: flex-start;
+        }
+        .bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+        .message.user .bubble {
+            background: var(--user-msg);
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message.ai .bubble {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        }
+        .blueprint-card {
+            margin-top: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            background: #fafafa;
+        }
+        .blueprint-card h3 { margin: 0 0 1rem 0; font-size: 1.1rem; }
+        .blueprint-card ul { margin: 0; padding-left: 1.5rem; color: var(--text-muted); }
+        .blueprint-card li { margin-bottom: 0.5rem; }
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+        .action-btn:hover { background: var(--primary-hover); }
+        .action-btn.secondary {
+            background: white;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            margin-left: 0.5rem;
+        }
+        .action-btn.secondary:hover { background: var(--user-msg); }
+        
+        /* Input Area */
+        .input-area {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            background: var(--bg);
+        }
+        .input-box {
+            position: relative;
+            display: flex;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            background: white;
+            border: 1px solid var(--border);
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 1.25rem 1.5rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 1rem;
+            outline: none;
+        }
+        .send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            margin: 0.5rem;
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .send-btn:hover { opacity: 0.8; }
+        .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+
+        /* Progress Steps */
+        .progress-steps { margin-top: 1rem; font-size: 0.95rem; }
+        .step { display: flex; align-items: center; margin-bottom: 0.5rem; color: var(--text-muted); }
+        .step.active { color: var(--text); font-weight: 500; }
+        .step.done { color: var(--text); text-decoration: line-through; }
+        .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.75rem;}
+        .icon { margin-right: 0.75rem; font-size: 1rem;}
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <header>App Factory</header>
+
+    <div class="chat-container" id="chat">
+        <div class="message ai">
+            <div class="bubble">
+                👋 Hi! I'm the Orchestrator AI. What kind of app or website do you want to build today?
             </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-box">
+            <input type="text" id="prompt-input" placeholder="e.g. A marketplace for local bakers..." autocomplete="off" onkeypress="handleEnter(event)">
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
@@ -435,13 +584,18 @@
                 explored = false;
             }
             return { chosen, explored };
+        let chatState = "init"; // init -> clarify -> blueprint -> building -> iterate
+
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('prompt-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function scrollToBottom() {
+            chat.scrollTop = chat.scrollHeight;
         }
 
-        function updateQValue(ide, reward) {
-            const currentQ = qTable[ide];
-            const newQ = currentQ + alpha * (reward - currentQ);
-            qTable[ide] = newQ;
-            return { oldQ: currentQ, newQ: newQ };
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
         }
 
         function renderQTable() {
@@ -471,10 +625,23 @@
                     </tr>
                 `;
             }
+        function addUserMessage(text) {
+            chat.innerHTML += `
+                <div class="message user">
+                    <div class="bubble">${text}</div>
+                </div>
+            `;
+            scrollToBottom();
         }
 
-        // Initial render
-        renderQTable();
+        function addAiMessage(htmlContent) {
+            const div = document.createElement('div');
+            div.className = 'message ai';
+            div.innerHTML = `<div class="bubble">${htmlContent}</div>`;
+            chat.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
 
         async function triggerSimulation(role, promptContext) {
             const btn = document.getElementById('trigger-btn');
@@ -544,17 +711,143 @@
                     <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed var(--border)">
                         📊 Q-Score for <b>${formattedChosen}</b> updated: <span style="font-family: monospace">${oldQ.toFixed(2)}</span> &rarr; <b style="color:var(--text); font-family: monospace">${newQ.toFixed(2)}</b>
                     </div>
-                </div>
-            `;
-            logs.prepend(logEntry);
+        async function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
 
-            // Update Q-Table
-            renderQTable();
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            addUserMessage(text);
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+
+            // Typing indicator
+            const typing = addAiMessage('<span style="color: var(--text-muted)">Thinking...</span>');
+            await sleep(1500);
+            typing.remove();
+
+            if (chatState === "init") {
+                // Multi-Turn Chat Clarification
+                addAiMessage("That sounds like a great idea! Since this is a marketplace, will you need users to be able to create accounts and log in?");
+                chatState = "clarify";
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            } 
+            else if (chatState === "clarify") {
+                // Visual Blueprint Generation
+                addAiMessage(`
+                    Got it. Our <b>Planner Agent</b> has generated a technical blueprint for your app based on our chat:
+                    <div class="blueprint-card">
+                        <h3>📋 App Blueprint</h3>
+                        <ul>
+                            <li>Frontend: React + Tailwind CSS</li>
+                            <li>Backend: Node.js API</li>
+                            <li>Auth: Standard Email/Password</li>
+                            <li>Pages: Landing, Login, Dashboard, Checkout</li>
+                        </ul>
+                        <button class="action-btn" onclick="approveBlueprint(this)">Approve & Build</button>
+                        <button class="action-btn secondary" onclick="alert('In a real app, you would type your modifications here!')">Modify</button>
+                    </div>
+                `);
+                chatState = "blueprint";
+            }
+            else if (chatState === "iterate") {
+                // Iterative Iteration Phase
+                const progressDiv = addAiMessage(`
+                    Okay, routing this tweak back to the Writer Agent...
+                    <div class="progress-steps" id="iter-prog">
+                        <div id="iter-step-1" class="step active"><div class="spinner"></div> ✍️ Rewriting code...</div>
+                        <div id="iter-step-2" class="step"><div class="icon">⏳</div> 🕵️ Reviewing changes...</div>
+                        <div id="iter-step-3" class="step"><div class="icon">⏳</div> 📦 Repackaging...</div>
+                    </div>
+                `);
+                
+                await sleep(2000);
+                document.getElementById('iter-step-1').className = 'step done';
+                document.getElementById('iter-step-1').innerHTML = '<div class="icon">✅</div> ✍️ Rewriting code...';
+                document.getElementById('iter-step-2').className = 'step active';
+                document.getElementById('iter-step-2').innerHTML = '<div class="spinner"></div> 🕵️ Reviewing changes...';
+
+                await sleep(1500);
+                document.getElementById('iter-step-2').className = 'step done';
+                document.getElementById('iter-step-2').innerHTML = '<div class="icon">✅</div> 🕵️ Reviewing changes...';
+                document.getElementById('iter-step-3').className = 'step active';
+                document.getElementById('iter-step-3').innerHTML = '<div class="spinner"></div> 📦 Repackaging...';
+
+                await sleep(1000);
+                document.getElementById('iter-step-3').className = 'step done';
+                document.getElementById('iter-step-3').innerHTML = '<div class="icon">✅</div> 📦 Repackaging...';
+
+                addAiMessage(`
+                    Done! The changes have been applied. <br><br>
+                    <button class="action-btn" onclick="alert('Downloading App_v2.zip')">Download Updated App (.zip)</button>
+                `);
+
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        async function approveBlueprint(btnEl) {
+            // Disable blueprint buttons
+            btnEl.parentElement.querySelectorAll('button').forEach(b => b.style.display = 'none');
+            
+            chatState = "building";
+            
+            const progressMsg = addAiMessage(`
+                Awesome! Routing the blueprint to our AI Agents...
+                <div class="progress-steps" id="build-prog">
+                    <div id="build-step-1" class="step active"><div class="spinner"></div> 🚀 Provisioning workspace...</div>
+                    <div id="build-step-2" class="step"><div class="icon">⏳</div> ✍️ Writing code...</div>
+                    <div id="build-step-3" class="step"><div class="icon">⏳</div> 🕵️ Reviewing and testing...</div>
+                    <div id="build-step-4" class="step"><div class="icon">⏳</div> 📦 Packaging final product...</div>
+                </div>
+            `);
+
+            await sleep(1000);
+            document.getElementById('build-step-1').className = 'step done';
+            document.getElementById('build-step-1').innerHTML = '<div class="icon">✅</div> 🚀 Provisioning workspace...';
+            document.getElementById('build-step-2').className = 'step active';
+            document.getElementById('build-step-2').innerHTML = '<div class="spinner"></div> ✍️ Writing code...';
+
+            await sleep(2500);
+            document.getElementById('build-step-2').className = 'step done';
+            document.getElementById('build-step-2').innerHTML = '<div class="icon">✅</div> ✍️ Writing code...';
+            document.getElementById('build-step-3').className = 'step active';
+            document.getElementById('build-step-3').innerHTML = '<div class="spinner"></div> 🕵️ Reviewing and testing...';
+
+            await sleep(1500);
+            document.getElementById('build-step-3').className = 'step done';
+            document.getElementById('build-step-3').innerHTML = '<div class="icon">✅</div> 🕵️ Reviewing and testing...';
+            document.getElementById('build-step-4').className = 'step active';
+            document.getElementById('build-step-4').innerHTML = '<div class="spinner"></div> 📦 Packaging final product...';
+
+            await sleep(1000);
+            document.getElementById('build-step-4').className = 'step done';
+            document.getElementById('build-step-4').innerHTML = '<div class="icon">✅</div> 📦 Packaging final product...';
+
+            addAiMessage(`
+                🎉 <b>Your app is ready!</b><br><br>
+                <button class="action-btn" onclick="alert('Downloading App.zip')">Download App (.zip)</button>
+                <br><br>
+                <span style="color: var(--text-muted); font-size: 0.9rem;">
+                    Want to change something? Just type "Make the header blue" below to iteratively update the code!
+                </span>
+            `);
 
             setTimeout(() => { 
                 btn.style.opacity = '1'; 
                 btn.style.pointerEvents = 'auto';
             }, 300);
+            chatState = "iterate";
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
         }
     </script>
 </body>
