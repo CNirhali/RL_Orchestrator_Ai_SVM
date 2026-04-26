@@ -4,15 +4,15 @@ from typing import Any, Optional, TypedDict
 from langgraph.graph import END, StateGraph
 
 from orchestrator.agents import writer_agent, reviewer_agent, planner_agent
-from orchestrator.hitl import hitl_manager
+from orchestrator.agents.packager import packager_agent
 from orchestrator.logging_utils import get_logger
 from orchestrator.provisioner import provisioner
 from orchestrator.rl_agent import rl_agent
 
-
 class AgentState(TypedDict):
     task_id: str
     request: dict
+    chat_history: list
     workspace_path: str
     context_hash: str
     chosen_ide: str
@@ -20,10 +20,12 @@ class AgentState(TypedDict):
     plan_result: dict
     execution_result: dict
     review_result: dict
+    package_result: dict
     reward: float
+    is_failed: bool
 
 def compute_context_hash(req: dict) -> str:
-    desc = req.get("description", "")
+    desc = req.get("user_prompt", "")
     task_type = "complex" if len(desc) > 50 else "simple"
     return hashlib.md5(task_type.encode()).hexdigest()[:8]
 
@@ -33,12 +35,12 @@ def node_provision(state: AgentState) -> AgentState:
     req = state["request"]
     workspace_path = provisioner.provision_workspace(
         state["task_id"], 
-        req.get("repository_url", "local"), 
-        req.get("description", "")
+        req.get("user_prompt", "")
     )
     state["workspace_path"] = workspace_path
     state["context_hash"] = compute_context_hash(req)
     state["attempt_count"] = 0
+    state["is_failed"] = False
     return state
 
 def node_route(state: AgentState) -> AgentState:
@@ -52,9 +54,19 @@ def node_route(state: AgentState) -> AgentState:
 def node_plan(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
     logger.info("state=planning")
-    result = planner_agent.plan(state["request"])
+    
+    # Pass chat history to planner
+    req = dict(state["request"])
+    req["chat_history"] = state.get("chat_history", [])
+    
+    result = planner_agent.plan(req)
     state["plan_result"] = result
     return state
+
+def edge_after_plan(state: AgentState) -> str:
+    if state["plan_result"].get("status") == "clarification_needed":
+        return END # Pause pipeline to wait for user
+    return "execute"
 
 def node_execute(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
@@ -82,39 +94,46 @@ def edge_after_review(state: AgentState) -> str:
         return "evaluate"
     else:
         if state["attempt_count"] >= 3:
-            return "hitl_escalation"
+            # We fail the pipeline for the user if it reaches 3 attempts
+            state["is_failed"] = True
+            return "evaluate"
         else:
             return "route" # Retry
-
-def node_hitl_escalation(state: AgentState) -> AgentState:
-    logger = get_logger(__name__, state["task_id"])
-    logger.warning("state=hitl_escalation agent=human_in_loop")
-    escalation_result = hitl_manager.escalate(state["task_id"], state["request"])
-    state["review_result"] = escalation_result
-    
-    state["reward"] = -50.0 
-    rl_agent.update_q_value(state["context_hash"], state["chosen_ide"], state["reward"])
-    return state
 
 def node_evaluate(state: AgentState) -> AgentState:
     logger = get_logger(__name__, state["task_id"])
     logger.info("state=evaluating")
     
     plan_metrics = state.get("plan_result", {}).get("metrics", {"cost": 0.0})
-    exec_metrics = state["execution_result"]["metrics"]
-    rev_metrics = state["review_result"]["metrics"]
+    exec_metrics = state["execution_result"].get("metrics", {"cost": 0.0, "time_taken": 0.0, "lint_errors": 0})
+    rev_metrics = state["review_result"].get("metrics", {"cost": 0.0})
     
     total_cost = plan_metrics["cost"] + exec_metrics["cost"] + rev_metrics["cost"]
     
-    reward = rl_agent.calculate_reward(
-        success=True,
-        cost=total_cost,
-        time_taken=exec_metrics["time_taken"],
-        lint_errors=exec_metrics["lint_errors"]
-    )
+    if state.get("is_failed"):
+        reward = -50.0
+    else:
+        reward = rl_agent.calculate_reward(
+            success=True,
+            cost=total_cost,
+            time_taken=exec_metrics["time_taken"],
+            lint_errors=exec_metrics["lint_errors"]
+        )
         
     state["reward"] = reward
     rl_agent.update_q_value(state["context_hash"], state["chosen_ide"], reward)
+    return state
+
+def edge_after_evaluate(state: AgentState) -> str:
+    if state.get("is_failed"):
+        return END
+    return "package"
+
+def node_package(state: AgentState) -> AgentState:
+    logger = get_logger(__name__, state["task_id"])
+    logger.info("state=packaging")
+    result = packager_agent.package(state["workspace_path"])
+    state["package_result"] = result
     return state
 
 workflow = StateGraph(AgentState)
@@ -124,17 +143,17 @@ workflow.add_node("route", node_route)
 workflow.add_node("plan", node_plan)
 workflow.add_node("execute", node_execute)
 workflow.add_node("review", node_review)
-workflow.add_node("hitl_escalation", node_hitl_escalation)
 workflow.add_node("evaluate", node_evaluate)
+workflow.add_node("package", node_package)
 
 workflow.set_entry_point("provision")
 workflow.add_edge("provision", "route")
 workflow.add_edge("route", "plan")
-workflow.add_edge("plan", "execute")
+workflow.add_conditional_edges("plan", edge_after_plan)
 workflow.add_edge("execute", "review")
 workflow.add_conditional_edges("review", edge_after_review)
-workflow.add_edge("hitl_escalation", END)
-workflow.add_edge("evaluate", END)
+workflow.add_conditional_edges("evaluate", edge_after_evaluate)
+workflow.add_edge("package", END)
 
 app = workflow.compile()
 
@@ -151,7 +170,9 @@ def run_orchestrator(task_id: str, request_data: dict):
         "plan_result": {},
         "execution_result": {},
         "review_result": {},
-        "reward": 0.0
+        "package_result": {},
+        "reward": 0.0,
+        "is_failed": False
     }
     
     final_state: Optional[dict[str, Any]] = None
@@ -162,12 +183,14 @@ def run_orchestrator(task_id: str, request_data: dict):
     logger.info("orchestrator finished")
     if not final_state:
         return {"status": "unknown"}
+    
+    if final_state.get("is_failed"):
+        return {"status": "failed", "message": "Failed to generate app. Please try again."}
+        
     return {
         "status": "completed",
+        "zip_path": final_state.get("package_result", {}).get("zip_path"),
         "reward": final_state.get("reward"),
         "chosen_ide": final_state.get("chosen_ide"),
-        "attempt_count": final_state.get("attempt_count"),
-        "workspace_path": final_state.get("workspace_path"),
-        "context_hash": final_state.get("context_hash"),
-        "review_status": (final_state.get("review_result") or {}).get("status"),
+        "attempt_count": final_state.get("attempt_count")
     }

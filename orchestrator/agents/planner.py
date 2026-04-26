@@ -3,24 +3,29 @@ import random
 
 class PlannerAgent:
     def plan(self, task_details: dict) -> dict:
-        print(f"[Planner Agent] Analyzing task '{task_details.get('description', 'Unknown Task')}'...")
+        chat_history = task_details.get("chat_history", [])
+        prompt = task_details.get("user_prompt", "")
+        
+        print(f"[Planner Agent] Analyzing chat history ({len(chat_history)} messages)...")
         time.sleep(1)
         
-        # Simulate cost of planning
         cost = random.uniform(0.01, 0.05)
         
-        # Determine plan complexity
-        desc_len = len(task_details.get('description', ''))
-        complexity = "complex" if desc_len > 50 else "simple"
-        
-        print(f"[Planner Agent] Generated a {complexity} technical specification.")
-        
-        return {
-            "status": "planned",
-            "complexity": complexity,
-            "metrics": {
-                "cost": cost
+        # Simulate needing clarification for the first message if it's short
+        if len(chat_history) <= 1 and len(prompt) < 100:
+            print(f"[Planner Agent] Prompt is vague. Requesting clarification from user.")
+            return {
+                "status": "clarification_needed",
+                "question": "Great! Will your app need user accounts or a database?",
+                "metrics": {"cost": cost}
             }
+            
+        print(f"[Planner Agent] Generated a comprehensive technical blueprint.")
+        return {
+            "status": "blueprint_ready",
+            "complexity": "complex",
+            "blueprint": ["Frontend UI", "Backend API", "Database Schema"],
+            "metrics": {"cost": cost}
         }
 
 planner_agent = PlannerAgent()

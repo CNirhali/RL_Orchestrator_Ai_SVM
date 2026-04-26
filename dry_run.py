@@ -49,6 +49,14 @@ class ArchitectAgent:
         cost = random.uniform(0.02, 0.05)
         print(f"[Architect Agent] Architecture blueprint generated. (Cost: ${cost:.3f})")
         return {"status": "architecture_ready", "metrics": {"cost": cost}}
+        time.sleep(1)
+        
+        if len(chat_history) <= 1:
+            print(f"[Planner Agent] ⚠️ Prompt is too vague. Requesting clarification.")
+            return {"status": "clarification_needed", "question": "Will your app need user accounts or a database?", "cost": 0.02}
+            
+        print(f"[Planner Agent] ✅ Gathered enough info. Generated a technical blueprint.")
+        return {"status": "blueprint_ready", "cost": 0.04}
 
 class WriterAgent:
     def execute(self, ide_name, attempt):
@@ -105,6 +113,11 @@ class DevOpsAgent:
         time.sleep(1)
         print(f"[DevOps Agent] Building docker image and deploying to staging... 🚀")
         return {"status": "deployed"}
+class PackagerAgent:
+    def package(self):
+        print(f"[Packager Agent] Zipping workspace into App.zip...")
+        time.sleep(1)
+        return {"status": "packaged"}
 
 def run_dry_run():
     print("==========================================")
@@ -119,6 +132,14 @@ def run_dry_run():
     security = SecurityAgent()
     qa = QAAgent()
     devops = DevOpsAgent()
+    
+    # Simulate User Chat
+    chat_history = [{"role": "user", "content": "A bakery website"}]
+    context_hash = hashlib.md5("bakery website".encode()).hexdigest()[:8]
+    
+    print(f"👤 USER: {chat_history[0]['content']}")
+    
+    packager = PackagerAgent()
     
     # Simulate User Chat
     chat_history = [{"role": "user", "content": "A bakery website"}]
@@ -182,6 +203,20 @@ def run_dry_run():
         else:
             rl_agent.update_q_value(context_hash, chosen_ide, -5.0)
             print(f"\n❌ Pipeline failed after maximum attempts. Please intervene.")
+            exec_res = writer.execute(chosen_ide, attempt)
+            rev_res = reviewer.review(exec_res["status"])
+            
+            if rev_res["status"] == "approved":
+                final_status = "approved"
+                break
+            attempt += 1
+            
+        if final_status == "approved":
+            packager.package()
+            rl_agent.update_q_value(context_hash, chosen_ide, 10.0)
+            print(f"\n🎉 App generation complete! Ready for download.")
+        else:
+            print(f"\n❌ Pipeline failed. Please try again.")
             
 if __name__ == "__main__":
     run_dry_run()
