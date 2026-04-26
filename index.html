@@ -363,19 +363,12 @@
     </div>
 
     <script>
-        // RL Agent logic
-        const ides = ["cursor", "windsurf", "claude", "vscode_cline"];
-        let qTable = { "cursor": 0.0, "windsurf": 0.0, "claude": 0.0, "vscode_cline": 0.0 };
-        const epsilon = 0.2;
-        const alpha = 0.1;
-        let taskCounter = 0;
-        let selectedRole = "";
-
         // UI State Management
         const overlay = document.getElementById('modal-overlay');
         const roleModal = document.getElementById('role-modal');
         const promptModal = document.getElementById('prompt-modal');
         const promptTextarea = document.getElementById('prompt-textarea');
+        let selectedRole = "";
 
         function openRoleSelection() {
             overlay.classList.add('active');
@@ -417,50 +410,58 @@
             triggerSimulation(selectedRole, finalPrompt);
         }
 
-        // Core RL Simulation Logic
-        function chooseIde() {
-            let chosen;
-            let explored;
-            if (Math.random() < epsilon) {
-                chosen = ides[Math.floor(Math.random() * ides.length)];
-                explored = true;
-            } else {
-                let maxScore = -Infinity;
-                for (const ide of ides) {
-                    if (qTable[ide] > maxScore) {
-                        maxScore = qTable[ide];
-                        chosen = ide;
-                    }
+        // New API integration logic
+        async function fetchQTable() {
+            try {
+                const response = await fetch('http://localhost:8001/q_table');
+                const data = await response.json();
+                renderQTable(data.q_table);
+            } catch (err) {
+                console.error("Failed to fetch Q-Table:", err);
+                const tbody = document.getElementById('q-body');
+                if (tbody.innerHTML === '') {
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--danger)">Could not connect to Backend server at :8000</td></tr>`;
                 }
-                explored = false;
             }
-            return { chosen, explored };
         }
 
-        function updateQValue(ide, reward) {
-            const currentQ = qTable[ide];
-            const newQ = currentQ + alpha * (reward - currentQ);
-            qTable[ide] = newQ;
-            return { oldQ: currentQ, newQ: newQ };
-        }
-
-        function renderQTable() {
+        function renderQTable(qTableData) {
             const tbody = document.getElementById('q-body');
             tbody.innerHTML = '';
             
-            const qValues = Object.values(qTable);
-            const minQ = Math.min(...qValues, -1);
-            const maxQ = Math.max(...qValues, 1);
+            // Flatten the 2D dict {context_hash: {ide: score}} for display
+            // We average the scores for each IDE across all contexts.
+            let ideScores = { "cursor": 0, "windsurf": 0, "claude": 0, "vscode_cline": 0 };
+            let contextCount = 0;
+            
+            if (qTableData && Object.keys(qTableData).length > 0) {
+                for (const [ctx, scores] of Object.entries(qTableData)) {
+                    contextCount++;
+                    for (const [ide, score] of Object.entries(scores)) {
+                        if (ideScores[ide] !== undefined) {
+                            ideScores[ide] += score;
+                        } else {
+                            ideScores[ide] = score;
+                        }
+                    }
+                }
+                for (const ide in ideScores) {
+                    ideScores[ide] /= contextCount;
+                }
+            }
+            
+            const qValues = Object.values(ideScores);
+            const minQ = Math.min(...qValues, -1) || -1;
+            const maxQ = Math.max(...qValues, 1) || 1;
             const range = maxQ - minQ;
 
-            for (const ide of ides) {
-                const score = qTable[ide];
+            for (const ide of Object.keys(ideScores)) {
+                const score = ideScores[ide];
                 const widthPercent = ((score - minQ) / range) * 100;
                 let color = 'var(--primary)';
                 if(score > 0.05) color = 'var(--success)';
                 else if(score < -0.05) color = 'var(--danger)';
 
-                // Formatting IDE names nicely
                 const formattedName = ide === 'vscode_cline' ? 'VS Code Cline' : ide.charAt(0).toUpperCase() + ide.slice(1);
 
                 tbody.innerHTML += `
@@ -473,88 +474,104 @@
             }
         }
 
-        // Initial render
-        renderQTable();
+        // Call fetchQTable on load
+        fetchQTable();
 
         async function triggerSimulation(role, promptContext) {
             const btn = document.getElementById('trigger-btn');
             btn.style.opacity = '0.5';
             btn.style.pointerEvents = 'none';
 
-            // Simulate slight network delay
-            await new Promise(r => setTimeout(r, 400));
-
-            taskCounter++;
-            const taskId = 'TASK-' + String(taskCounter).padStart(4, '0');
-            
-            // RL Pipeline
-            const { chosen, explored } = chooseIde();
-            const writerSuccess = Math.random() < 0.75;
-            const secSuccess = Math.random() < 0.90;
-            const qaSuccess = Math.random() < 0.85;
-            const overallSuccess = writerSuccess && secSuccess && qaSuccess;
-            
-            const reward = overallSuccess ? 1.0 : -1.0;
-            const { oldQ, newQ } = updateQValue(chosen, reward);
-            
-            // Update Logs
             const logs = document.getElementById('logs');
             if(logs.innerHTML.includes('Awaiting tasks')) logs.innerHTML = '';
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${overallSuccess ? 'success' : 'failed'}`;
-            
-            const strategy = explored ? '<span style="color:var(--primary)">EXPLORED</span> (Random Strategy)' : '<span style="color:var(--success)">EXPLOITED</span> (Best Known)';
-            const formattedChosen = chosen === 'vscode_cline' ? 'VS Code Cline' : chosen.charAt(0).toUpperCase() + chosen.slice(1);
-            
-            let pipelineLogs = `
-                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; font-size: 0.85rem; border-left: 2px solid var(--text-muted)">
-                    <strong>Context:</strong> ${role}<br>
-                    <strong>Prompt:</strong> <i>"${promptContext.substring(0, 60)}${promptContext.length > 60 ? '...' : ''}"</i>
-                </div>
-                <div>🤖 <b>[Planner Agent]</b> Analyzed requirements</div>
-                <div>🧠 <b>[RL Brain]</b> ${strategy} &rarr; Assigned to <b style="color:var(--text)">${formattedChosen}</b></div>`;
-            
-            if (!writerSuccess) {
-                pipelineLogs += `<div style="margin: 0.5rem 0; color: var(--danger)">❌ <b>[Reviewer Agent]</b> Rejected: Syntax errors detected in code.</div>`;
-            } else {
-                pipelineLogs += `<div style="margin: 0.5rem 0; color: var(--success)">✅ <b>[Reviewer Agent]</b> Approved: Code follows style guides.</div>`;
-                if (!secSuccess) {
-                    pipelineLogs += `<div style="color: var(--danger)">⚠️ <b>[Security Agent]</b> Detected critical vulnerability. Pipeline aborted.</div>`;
-                } else {
-                    pipelineLogs += `<div style="color: var(--success)">🛡️ <b>[Security Agent]</b> Scanned: 0 Vulnerabilities</div>`;
-                    if (!qaSuccess) {
-                        pipelineLogs += `<div style="color: var(--danger)">❌ <b>[QA Agent]</b> Unit tests failed. Pipeline aborted.</div>`;
-                    } else {
-                        pipelineLogs += `<div style="color: var(--success)">✅ <b>[QA Agent]</b> E2E Test Suite Passed</div>
-                                         <div style="color: var(--primary); margin-top: 0.25rem;">🚀 <b>[DevOps Agent]</b> Deployed successfully to staging environment</div>`;
-                    }
+
+            const loadingEntry = document.createElement('div');
+            loadingEntry.className = 'log-entry';
+            loadingEntry.innerHTML = `<div style="font-weight: 600; margin-bottom: 0.5rem">Submitting task to Backend...</div>`;
+            logs.prepend(loadingEntry);
+
+            try {
+                const response = await fetch('http://localhost:8001/webhook/task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description: promptContext, role: role })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
                 }
-            }
-            
-            logEntry.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
-                    <strong style="font-size: 1.1rem">${taskId}</strong>
-                    <span style="font-size: 0.85rem; background: ${overallSuccess ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; padding: 0.2rem 0.5rem; border-radius: 1rem; color: ${overallSuccess ? 'var(--success)' : 'var(--danger)'}">
-                        ${overallSuccess ? 'SUCCESS' : 'FAILED'}
-                    </span>
-                </div>
-                <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;">
-                    ${pipelineLogs}
-                    <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed var(--border)">
-                        📊 Q-Score for <b>${formattedChosen}</b> updated: <span style="font-family: monospace">${oldQ.toFixed(2)}</span> &rarr; <b style="color:var(--text); font-family: monospace">${newQ.toFixed(2)}</b>
-                    </div>
-                </div>
-            `;
-            logs.prepend(logEntry);
+                
+                const data = await response.json();
+                const taskId = data.task_id;
+                
+                loadingEntry.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 0.5rem">Task: ${taskId}</div>
+                    <div style="color: var(--primary)">Running LangGraph orchestrator pipeline...</div>
+                `;
 
-            // Update Q-Table
-            renderQTable();
+                // Poll for status
+                const interval = setInterval(async () => {
+                    try {
+                        const pollRes = await fetch(`http://localhost:8001/tasks/${taskId}`);
+                        const taskData = await pollRes.json();
 
-            setTimeout(() => { 
+                        if (taskData.status === 'completed' || taskData.status === 'failed') {
+                            clearInterval(interval);
+                            
+                            const overallSuccess = taskData.status === 'completed';
+                            loadingEntry.className = `log-entry ${overallSuccess ? 'success' : 'failed'}`;
+                            
+                            const res = taskData.result || {};
+                            const formattedChosen = res.chosen_ide ? (res.chosen_ide === 'vscode_cline' ? 'VS Code Cline' : res.chosen_ide.charAt(0).toUpperCase() + res.chosen_ide.slice(1)) : 'Unknown';
+                            
+                            let pipelineLogs = `
+                                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; font-size: 0.85rem; border-left: 2px solid var(--text-muted)">
+                                    <strong>Role:</strong> ${role}<br>
+                                    <strong>Context Hash:</strong> <span style="font-family: monospace">${res.context_hash || 'N/A'}</span><br>
+                                    <strong>Prompt:</strong> <i>"${promptContext.substring(0, 60)}${promptContext.length > 60 ? '...' : ''}"</i>
+                                </div>
+                                <div>🤖 <b>[Planner Agent]</b> Analyzed requirements</div>
+                                <div>🧠 <b>[RL Brain]</b> Assigned task to <b style="color:var(--text)">${formattedChosen}</b></div>
+                                <div>🔄 <b>[Router]</b> Graph Iterations: ${res.attempt_count}</div>
+                            `;
+
+                            if (taskData.status === 'failed') {
+                                pipelineLogs += `<div style="color: var(--danger); margin-top: 0.5rem;">❌ Pipeline Failed: ${taskData.error}</div>`;
+                            } else {
+                                pipelineLogs += `<div style="color: var(--success); margin-top: 0.5rem;">✅ Pipeline Completed. Status: ${res.review_status}</div>`;
+                                pipelineLogs += `<div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed var(--border)">
+                                    📊 Reward Distributed: <span style="font-family: monospace">${res.reward !== undefined ? res.reward.toFixed(2) : 'N/A'}</span>
+                                </div>`;
+                            }
+
+                            loadingEntry.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                                    <strong style="font-size: 1.1rem">${taskId}</strong>
+                                    <span style="font-size: 0.85rem; background: ${overallSuccess ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; padding: 0.2rem 0.5rem; border-radius: 1rem; color: ${overallSuccess ? 'var(--success)' : 'var(--danger)'}">
+                                        ${overallSuccess ? 'SUCCESS' : 'FAILED'}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;">
+                                    ${pipelineLogs}
+                                </div>
+                            `;
+
+                            // Refresh Q-Table
+                            fetchQTable();
+                            
+                            btn.style.opacity = '1'; 
+                            btn.style.pointerEvents = 'auto';
+                        }
+                    } catch (e) {
+                        console.error("Polling error:", e);
+                    }
+                }, 1500);
+
+            } catch (err) {
+                loadingEntry.innerHTML = `<div style="color: var(--danger); margin-top: 0.5rem;">❌ Error connecting to backend: ${err.message}</div>`;
                 btn.style.opacity = '1'; 
                 btn.style.pointerEvents = 'auto';
-            }, 300);
+            }
         }
     </script>
 </body>

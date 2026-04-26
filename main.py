@@ -2,19 +2,31 @@ import uuid
 from typing import Optional
 
 from fastapi import BackgroundTasks, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from orchestrator.config import get_settings
 from orchestrator.logging_utils import configure_logging, get_logger
 from orchestrator.router import run_orchestrator
+from orchestrator.rl_agent import rl_agent
 
 app = FastAPI(title="Master Agent Orchestrator")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 configure_logging()
 logger = get_logger(__name__)
 
 class TaskRequest(BaseModel):
-    repository_url: str
+    repository_url: str = "local"
     description: str
+    role: Optional[str] = None
     jira_id: Optional[str] = None
     teams_thread_id: Optional[str] = None
 
@@ -79,6 +91,10 @@ def get_task(task_id: str):
     if task is None:
         return {"status": "not_found", "task_id": task_id}
     return {"task_id": task_id, **task}
+
+@app.get("/q_table")
+def get_q_table():
+    return {"q_table": rl_agent.get_all_scores()}
 
 
 if __name__ == "__main__":
