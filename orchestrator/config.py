@@ -46,11 +46,11 @@ class Settings:
     max_attempts: int = _env_int("MAO_MAX_ATTEMPTS", 3)
 
     # Provisioning / persistence (local prototype)
-    workspace_root: str = _env_str("MAO_WORKSPACE_ROOT", "/tmp/master_agent_workspaces")
+    workspace_root: str = _env_str("MAO_WORKSPACE_ROOT", "./workspaces")
     enable_git_clone: bool = _env_bool("MAO_ENABLE_GIT_CLONE", True)
     git_clone_timeout_s: float = _env_float("MAO_GIT_CLONE_TIMEOUT_S", 60.0)
 
-    rl_state_file: str = _env_str("MAO_RL_STATE_FILE", "rl_state.json")
+    rl_state_file: str = _env_str("MAO_RL_STATE_FILE", "rl_state.db")
     rl_epsilon: float = _env_float("MAO_RL_EPSILON", 0.2)
 
     # Simulation controls (used by executors)

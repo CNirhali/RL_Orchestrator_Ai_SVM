@@ -3,7 +3,7 @@ import socketserver
 import json
 import random
 
-PORT = 8080
+PORT = 8082
 
 # --- MOCK RL Agent ---
 class RLAgent:
